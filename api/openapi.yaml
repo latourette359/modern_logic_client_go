@@ -1,0 +1,1374 @@
+openapi: 3.0.2
+info:
+  contact:
+    email: info@usemodernlogic.com
+  description: Manage and version your customer decision logic outside of your codebase
+  title: Modern Logic Api
+  version: 1.0.0
+servers:
+- description: The production API server
+  url: https://{company}.usemodernlogic.com/v1/
+  variables:
+    company:
+      default: app
+      description: this value is assigned by Modern Logic
+security:
+- bearerAuth: []
+tags:
+- description: |-
+    In Modern Logic, a workflow is an executable unit of logic.
+    Each workflow is designated a static url,
+    which you can call in order to run the current production logic for that Workflow.
+    As you change and publish new versions of the workflow, this initial url will remain constant.
+    At any given time a workflow has a "production version" which is the version of that
+    workflow that will be run when hitting the static URL mentioned previously.
+    In order to see the current production version of a workflow, you can navigate to the /editor page of the UI.
+    Here you should see the currently deployed version and the option to switch it for a different version of the workflow.
+  name: Workflows
+- description: |-
+    Every time a workflow runs, we call it an execution. Each time you perform an execution any number of things can
+    happen. External calls can be made to data sources, customer attributes can change, alerts can be created, etc. In Modern Logic,
+    we save all these behaviors into what we call an execution object. To see what happened during a particular workflow run,
+    all you have to do is find the execution object for that run and it will have all the information you need.
+  name: Executions
+- description: |-
+    Data sources provide all the information in a workflow not included in the initial API call. In Modern Logic several datasources
+    are supplied out of the box to allow you to pull in important information about a given customer. However, you can also create your
+    own custom datasources, such as a connection to your database, or a post request to an external API you want to use. As long as it
+    produces json, you can theoretically use it as a datasource.
+  name: Data Sources
+- description: |-
+    The normal way to consume the result of a workflow execution is through the response of the API call.
+    However, depending on how your system is set up, you may want multiple actions to take place depending on
+    the outcome of a workflow. One way you can accomplish this is through webhooks. By subscribing to a workflow, you are
+    telling modern logic to call your callback function each time that workflow executes.
+  name: Webhooks
+- description: |-
+    The reason for it all. When you run a customer through a workflow 1 of 2 things will happen. Modern logic will look at the customer
+    id you provided and see if it has a record for that customer. If it does, that execution is linked to that customer and the new customer
+    attributes you provided are updated. If not, Modern Logic creates a new customer under the supplied customer id. All workflow executions,
+    and transitively all side effects of those executions are tied to this customer id.
+  name: Customers
+- description: |-
+    So say you have a workflow that handles 95% of your customers automatically. However, that remaining 5% needs special attention, and its
+    better to handle them manually. Thats where alerts come in. Alerts are meant to catch those few instances that you don't want to or cannot automate.
+    If a workflow creates an alert it will hault and send the alert to your inbox, where it can be assigned to someone on your team to resolve manually.
+  name: Alerts
+paths:
+  /workflow/{workflowID}/execute:
+    post:
+      parameters:
+      - description: Workflow id
+        explode: false
+        in: path
+        name: workflowID
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - description: If you want to run a version other then the current production
+          version, you can supply the version number to run.
+        explode: true
+        in: query
+        name: v
+        required: false
+        schema:
+          type: integer
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutionInput'
+        description: Execution Information
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowExecutionResult'
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "404":
+          description: Workflow not found
+        "500":
+          description: Unexpected Error (contact support)
+      summary: Execute Workflow
+      tags:
+      - Workflows
+  /workflow/{workflowID}/executions:
+    get:
+      parameters:
+      - description: Workflow Id
+        explode: false
+        in: path
+        name: workflowID
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - description: If you want to return the executions of a particular workflow
+          version instead of all workflows
+        explode: true
+        in: query
+        name: v
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: Number of elements to return (default is 10)
+        explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: form
+      - description: Lists are ordered by creation date ascending. To return the first
+          page, set pageNumber to zero
+        explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ListResponse'
+                - properties:
+                    items:
+                      items:
+                        $ref: '#/components/schemas/ExecutionItem'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "404":
+          description: Workflow not found
+        "500":
+          description: Unexpected Error (contact support)
+      summary: List Workflow Executions
+      tags:
+      - Workflows
+  /workflow:
+    get:
+      parameters:
+      - description: Number of elements to return (default is 10)
+        explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: form
+      - description: Lists are ordered by creation date ascending. To return the first
+          page, set pageNumber to zero
+        explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ListResponse'
+                - properties:
+                    items:
+                      items:
+                        $ref: '#/components/schemas/Workflow'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "500":
+          description: Unexpected Error (contact support)
+      summary: List Available Workflows
+      tags:
+      - Workflows
+  /workflow/{workflowID}/versions:
+    get:
+      parameters:
+      - description: Workflow id
+        explode: false
+        in: path
+        name: workflowID
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - description: Number of elements to return (default is 10)
+        explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: form
+      - description: Lists are ordered by creation date ascending. To return the first
+          page, set pageNumber to zero
+        explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ListResponse'
+                - properties:
+                    items:
+                      items:
+                        $ref: '#/components/schemas/WorkflowVersion'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "404":
+          description: Workflow not found
+        "500":
+          description: Unexpected Error (contact support)
+      summary: List Workflow Versions
+      tags:
+      - Workflows
+  /workflow/{workflowID}:
+    get:
+      parameters:
+      - description: Workflow id
+        explode: false
+        in: path
+        name: workflowID
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "404":
+          description: Workflow not found
+        "500":
+          description: Unexpected Error (contact support)
+      summary: Get Workflow Details
+      tags:
+      - Workflows
+  /workflow/{workflowID}/webhooks:
+    get:
+      parameters:
+      - description: Workflow ID
+        explode: false
+        in: path
+        name: workflowID
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - description: Number of elements to return (default is 10)
+        explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: form
+      - description: Lists are ordered by creation date ascending. To return the first
+          page, set pageNumber to zero
+        explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ListResponse'
+                - properties:
+                    items:
+                      items:
+                        $ref: '#/components/schemas/Webhook'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "404":
+          description: Workflow not found
+        "500":
+          description: Unexpected Error (contact support)
+      summary: List Active Callbacks
+      tags:
+      - Workflows
+  /execution/{executionId}/resume:
+    post:
+      parameters:
+      - description: execution id
+        explode: false
+        in: path
+        name: executionId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties: true
+              type: object
+        description: Execution Information
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowExecutionResult'
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "404":
+          description: Workflow not found
+        "500":
+          description: Unexpected Error (contact support)
+      summary: Resume Execution
+      tags:
+      - Executions
+  /execution/{executionId}:
+    get:
+      parameters:
+      - description: Execution id
+        explode: false
+        in: path
+        name: executionId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Execution'
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "404":
+          description: Execution not found
+        "500":
+          description: Unexpected Error (contact support)
+      summary: Get Execution Details
+      tags:
+      - Executions
+  /datasource:
+    get:
+      parameters:
+      - description: Number of elements to return (default is 10)
+        explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: form
+      - description: Lists are ordered by creation date ascending. To return the first
+          page, set pageNumber to zero
+        explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ListResponse'
+                - properties:
+                    items:
+                      items:
+                        $ref: '#/components/schemas/DataSource'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "500":
+          description: Unexpected Error (contact support)
+      summary: List Data Sources
+      tags:
+      - Data Sources
+  /datasource/{datasourceId}:
+    get:
+      description: Evaluates a new user using the specificed workflow and user details.
+        Typically called during onboarding.
+      parameters:
+      - description: Data Source id
+        explode: false
+        in: path
+        name: datasourceId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSource'
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "404":
+          description: Data source not found
+        "500":
+          description: Unexpected Error (contact support)
+      summary: Get Data Source Details
+      tags:
+      - Data Sources
+  /datasource/{datasourceId}/calls:
+    get:
+      parameters:
+      - description: Specified workflow to run, to evaluate the target user.
+        explode: false
+        in: path
+        name: datasourceId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - description: Number of elements to return (default is 10)
+        explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: form
+      - description: Lists are ordered by creation date ascending. To return the first
+          page, set pageNumber to zero
+        explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ListResponse'
+                - properties:
+                    items:
+                      items:
+                        $ref: '#/components/schemas/DataSourceCallItem'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "404":
+          description: Data source not found
+        "500":
+          description: Unexpected Error (contact support)
+      summary: List Data Source Calls
+      tags:
+      - Data Sources
+  /datasource_calls/{datasourceCallId}:
+    get:
+      description: A datasource call is a single instance of when a datasource was
+        queried by a workflow
+      parameters:
+      - description: Data source call id
+        explode: false
+        in: path
+        name: datasourceCallId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSourceCall'
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "404":
+          description: Data source call not found
+        "500":
+          description: Unexpected Error (contact support)
+      summary: Get Data Source Call Details
+      tags:
+      - Data Sources
+  /webhook:
+    get:
+      parameters:
+      - description: Number of elements to return (default is 10)
+        explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: form
+      - description: Lists are ordered by creation date ascending. To return the first
+          page, set pageNumber to zero
+        explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ListResponse'
+                - properties:
+                    items:
+                      items:
+                        $ref: '#/components/schemas/Webhook'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "500":
+          description: Unexpected Error (contact support)
+      summary: List Webhooks
+      tags:
+      - Webhooks
+  /webhook/{webhookId}:
+    get:
+      parameters:
+      - description: Webhook Id
+        explode: false
+        in: path
+        name: webhookId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "404":
+          description: Webhook not found
+        "500":
+          description: Unexpected Error (contact support)
+      summary: Get Webhook Details
+      tags:
+      - Webhooks
+  /alert:
+    get:
+      parameters:
+      - description: Number of elements to return (default is 10)
+        explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: form
+      - description: Lists are ordered by creation date ascending. To return the first
+          page, set pageNumber to zero
+        explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ListResponse'
+                - properties:
+                    items:
+                      items:
+                        $ref: '#/components/schemas/Alert'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "500":
+          description: Unexpected Error (contact support)
+      summary: List Alerts
+      tags:
+      - Alerts
+  /alert/{alertId}:
+    get:
+      parameters:
+      - description: Alert id
+        explode: false
+        in: path
+        name: alertId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "404":
+          description: Alert not found
+        "500":
+          description: Unexpected Error (contact support)
+      summary: Get Alert Details
+      tags:
+      - Alerts
+  /customer:
+    get:
+      parameters:
+      - description: Number of elements to return (default is 10)
+        explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: form
+      - description: Lists are ordered by creation date ascending. To return the first
+          page, set pageNumber to zero
+        explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ListResponse'
+                - properties:
+                    items:
+                      items:
+                        $ref: '#/components/schemas/CustomerItem'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "500":
+          description: Unexpected Error (contact support)
+      summary: List Customers
+      tags:
+      - Customers
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Customer'
+        description: Customer Information
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "500":
+          description: Unexpected Error (contact support)
+      summary: Create Customer
+      tags:
+      - Customers
+  /customer/{customerId}:
+    delete:
+      parameters:
+      - description: Customer id that the client supplied
+        explode: false
+        in: path
+        name: customerId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "500":
+          description: Unexpected Error (contact support)
+      summary: Delete Customer
+      tags:
+      - Customers
+    get:
+      parameters:
+      - description: Customer id that the client supplied
+        explode: false
+        in: path
+        name: customerId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "404":
+          description: Customer not found
+        "500":
+          description: Unexpected Error (contact support)
+      summary: Get Customer Details
+      tags:
+      - Customers
+    put:
+      parameters:
+      - description: Customer id that the client supplied
+        explode: false
+        in: path
+        name: customerId
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Customer'
+        description: Customer Information
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "500":
+          description: Unexpected Error (contact support)
+      summary: Update Customer Details
+      tags:
+      - Customers
+  /customer/{customerId}/executions:
+    get:
+      parameters:
+      - description: Customer id that the client supplied
+        explode: false
+        in: path
+        name: customerId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Number of elements to return (default is 10)
+        explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: form
+      - description: Lists are ordered by creation date ascending. To return the first
+          page, set pageNumber to zero
+        explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ListResponse'
+                - properties:
+                    items:
+                      items:
+                        $ref: '#/components/schemas/Execution'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "404":
+          description: Customer not found
+        "500":
+          description: Unexpected Error (contact support)
+      summary: List Customer Executions
+      tags:
+      - Executions
+components:
+  schemas:
+    ListResponse:
+      properties:
+        total:
+          description: Total number of entities
+          type: integer
+        totalReturned:
+          description: Total number of entities returned
+          type: integer
+        items:
+          items:
+            type: object
+          type: array
+      title: List Response
+      type: object
+    ExecutionItem:
+      properties:
+        id:
+          type: integer
+        dateTimeExecuted:
+          description: When the execution happened
+          format: date-time
+          type: string
+        workflowId:
+          type: integer
+      title: Execution Item
+      type: object
+    Execution:
+      example:
+        dateTimeExecuted: 2000-01-23T04:56:07.000+00:00
+        request:
+          customerId: myCustomer123
+          firstName: Carly
+          lastName: Fungus
+          date: 1990-03-05
+          email: example@usemodernlogic.com
+        response:
+          result: approve
+          score: "400"
+          reason:
+          - rule 1 fired
+          - rule 2 fired
+          definedVariables:
+            score: 5
+          dateEvaluated: August 1, 2019
+          followUpRequired: false
+          workflowId: 1
+          evaluationId: 482947829
+        runtime: 1
+        id: 0
+        alertId: 6
+        workflowId: 5
+      properties:
+        id:
+          type: integer
+        alertId:
+          type: integer
+        runtime:
+          description: Time it took to execute the workflow in milliseconds
+          type: integer
+        dateTimeExecuted:
+          description: When the execution happened
+          format: date-time
+          type: string
+        workflowId:
+          type: integer
+        request:
+          $ref: '#/components/schemas/ExecutionInput'
+        response:
+          $ref: '#/components/schemas/WorkflowExecutionResult'
+      title: Execution
+      type: object
+    Alert:
+      example:
+        executionId: 6
+        dateOpened: 2000-01-23
+        description: description
+        id: 0
+        assignedTo: assignedTo
+      properties:
+        id:
+          type: integer
+        assignedTo:
+          format: email
+          type: string
+        dateOpened:
+          format: date
+          type: string
+        description:
+          type: string
+        executionId:
+          type: integer
+      title: Alert
+      type: object
+    AlertItem:
+      properties:
+        id:
+          type: integer
+        executionId:
+          type: integer
+      title: Alert Item
+      type: object
+    CustomerItem:
+      properties:
+        id:
+          type: integer
+        externalId:
+          type: string
+      title: Customer Item
+      type: object
+    Webhook:
+      example:
+        entityType: entityType
+        name: name
+        entityId: 6
+        id: 0
+        url: url
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        url:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: integer
+      title: Webhook
+      type: object
+    WorkflowVersion:
+      properties:
+        versionNumber:
+          type: integer
+        name:
+          type: string
+        publishDate:
+          format: date
+          type: string
+        isActive:
+          type: boolean
+      title: Workflow Version
+      type: object
+    DataSourceType:
+      enum:
+      - PG_DB
+      - API_POST
+      - MANAGED
+      title: Data Source Type
+      type: string
+    DataSourceCallItem:
+      properties:
+        id:
+          type: integer
+        executionId:
+          type: integer
+        dataSourceId:
+          type: integer
+      title: Data Source Call Item
+      type: object
+    DataSourceCall:
+      example:
+        executionId: 6
+        request: '{}'
+        dataSourceId: 1
+        response: '{}'
+        id: 0
+        dateTimeOfCall: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          type: integer
+        executionId:
+          type: integer
+        dataSourceId:
+          type: integer
+        request:
+          type: object
+        response:
+          type: object
+        dateTimeOfCall:
+          format: date-time
+          type: string
+      title: Data Source Call
+      type: object
+    DataSource:
+      example:
+        name: name
+        id: 0
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/DataSourceType'
+      title: Data Source
+      type: object
+    Workflow:
+      example:
+        name: name
+        id: 0
+        currentProductionVersion: 6
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        currentProductionVersion:
+          type: integer
+      title: Workflow Entity
+      type: object
+    WebhookResponse:
+      description: What we will send to your webhook via a post request
+      properties:
+        webhookId:
+          type: integer
+        workflowId:
+          type: integer
+        workflowVersion:
+          type: integer
+        executionId:
+          type: integer
+        customerId:
+          type: integer
+        customerUrl:
+          type: string
+        alertId:
+          type: integer
+        description:
+          type: string
+        event:
+          enum:
+          - WORKFLOW_EXECUTED
+          - CUSTOMER_STATUS_CHANGED
+          type: string
+        event_metadata:
+          type: object
+      title: Webhook Response
+      type: object
+    ExecutionInput:
+      additionalProperties: true
+      description: A json blob you send to your workflow to execute on
+      example:
+        customerId: myCustomer123
+        firstName: Carly
+        lastName: Fungus
+        date: 1990-03-05
+        email: example@usemodernlogic.com
+      properties:
+        customerId:
+          description: Ties execution result to a specific customer
+          type: string
+      title: Execution Input
+      type: object
+    Customer:
+      example:
+        customerId: myCustomer123
+        firstName: Carly
+        lastName: Fungus
+        date: 1990-03-05
+        email: example@usemodernlogic.com
+        extraProperties:
+          income: 100
+          dogsName: Cody
+      properties:
+        extraProperties:
+          type: object
+        customerId:
+          description: Way that you uniquely identify customers
+          type: string
+        firstName:
+          description: Legal first name of the user being evaluated.
+          type: string
+        lastName:
+          description: Legal last name (surname) of the user being evaluated.
+          type: string
+        email:
+          description: Email address provided by user being evaluated.
+          type: string
+        phone:
+          description: Phone number of user being evaluated.
+          type: string
+        addressStreet:
+          description: Home address of user being evaluated
+          type: string
+        addressStreet2:
+          type: string
+        addressCity:
+          type: string
+        addressStateCode:
+          type: string
+        addressZip:
+          type: string
+        addressCountryCode:
+          type: string
+        dob:
+          description: Date of birth for user being evaluated
+          format: date
+          type: string
+      title: Customer
+      type: object
+    WorkflowExecutionResult:
+      description: Contains the results of the executed workflow
+      example:
+        result: approve
+        score: "400"
+        reason:
+        - rule 1 fired
+        - rule 2 fired
+        definedVariables:
+          score: 5
+        dateEvaluated: August 1, 2019
+        followUpRequired: false
+        workflowId: 1
+        evaluationId: 482947829
+      properties:
+        flags:
+          items:
+            type: string
+          type: array
+        warnings:
+          items:
+            $ref: '#/components/schemas/RuleSetWarning'
+          type: array
+        executionId:
+          format: int32
+          type: integer
+        result:
+          enum:
+          - APPROVED
+          - REJECTED
+          - FLAGGED_FOR_REVIEW
+          - PAUSED
+          - ERROR
+          example: APPROVED
+          type: string
+        score:
+          example: "400"
+          type: string
+        reason:
+          example:
+          - rule 1 fired
+          - rule 2 fired
+          items:
+            type: string
+          type: array
+        dateEvaluated:
+          example: 2019-03-01
+          type: string
+        workflowId:
+          format: int32
+          type: integer
+        workflowVersion:
+          format: int32
+          type: integer
+        definedVariables:
+          additionalProperties: true
+          description: this field contains the variables that were defined during
+            your execution
+          example:
+            score: 5
+          type: object
+        followUpRequired:
+          type: boolean
+      title: Workflow Execution Result
+      type: object
+    RuleSetWarning:
+      properties:
+        name:
+          type: string
+        rules:
+          items:
+            $ref: '#/components/schemas/RuleWarning'
+          type: array
+      title: Rule Set Warning
+      type: object
+    RuleWarning:
+      properties:
+        name:
+          type: string
+        warning:
+          type: string
+      title: Rule Warning
+      type: object
+  securitySchemes:
+    bearerAuth:
+      bearerFormat: JWT
+      description: Modern Logic will provide a means for generating this token
+      name: Authorization
+      scheme: bearer
+      type: http
