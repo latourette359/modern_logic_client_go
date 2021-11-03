@@ -399,6 +399,83 @@ paths:
       summary: Resume Execution
       tags:
       - Executions
+  /execution:
+    get:
+      parameters:
+      - description: Number of elements to return (default is 10)
+        explode: true
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: form
+      - description: Lists are ordered by creation date ascending. To return the first
+          page, set pageNumber to zero
+        explode: true
+        in: query
+        name: pageNumber
+        required: false
+        schema:
+          type: integer
+        style: form
+      - description: The alert status of this execution
+        explode: true
+        in: query
+        name: alertType
+        required: false
+        schema:
+          enum:
+          - approve
+          - investigate
+          - reject
+          type: string
+        style: form
+      - description: Filter executions to those that occurred before the given date.
+        explode: true
+        in: query
+        name: before
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      - description: Filter executions to those that occurred after the given date.
+        explode: true
+        in: query
+        name: after
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/ListResponse'
+                - properties:
+                    items:
+                      items:
+                        $ref: '#/components/schemas/Execution'
+                      type: array
+                  type: object
+          description: OK
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Unauthorized
+        "500":
+          description: Unexpected Error (contact support)
+      summary: List executions
+      tags:
+      - Executions
   /execution/{executionId}:
     get:
       parameters:
@@ -699,6 +776,48 @@ paths:
         required: false
         schema:
           type: integer
+        style: form
+      - description: The username of the user the alert is assigned to
+        explode: true
+        in: query
+        name: assignedTo
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: The name of the team the alert is assigned to
+        explode: true
+        in: query
+        name: assignedToTeam
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: The name of the workflow associated to the alert
+        explode: true
+        in: query
+        name: workflow
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Filter alerts to those that occurred before the given date.
+        explode: true
+        in: query
+        name: before
+        required: false
+        schema:
+          format: date
+          type: string
+        style: form
+      - description: Filter alerts to those that occurred after the given date.
+        explode: true
+        in: query
+        name: after
+        required: false
+        schema:
+          format: date
+          type: string
         style: form
       responses:
         "200":
@@ -1215,6 +1334,7 @@ components:
           enum:
           - WORKFLOW_EXECUTED
           - CUSTOMER_STATUS_CHANGED
+          - ALERT_STATUS_CHANGED
           type: string
         event_metadata:
           type: object
@@ -1369,6 +1489,5 @@ components:
     bearerAuth:
       bearerFormat: JWT
       description: Modern Logic will provide a means for generating this token
-      name: Authorization
       scheme: bearer
       type: http

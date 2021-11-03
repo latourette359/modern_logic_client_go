@@ -26,7 +26,8 @@ const (
 	MANAGED DataSourceType = "MANAGED"
 )
 
-var allowedDataSourceTypeEnumValues = []DataSourceType{
+// All allowed values of DataSourceType enum
+var AllowedDataSourceTypeEnumValues = []DataSourceType{
 	"PG_DB",
 	"API_POST",
 	"MANAGED",
@@ -39,7 +40,7 @@ func (v *DataSourceType) UnmarshalJSON(src []byte) error {
 		return err
 	}
 	enumTypeValue := DataSourceType(value)
-	for _, existing := range allowedDataSourceTypeEnumValues {
+	for _, existing := range AllowedDataSourceTypeEnumValues {
 		if existing == enumTypeValue {
 			*v = enumTypeValue
 			return nil
@@ -56,13 +57,13 @@ func NewDataSourceTypeFromValue(v string) (*DataSourceType, error) {
 	if ev.IsValid() {
 		return &ev, nil
 	} else {
-		return nil, fmt.Errorf("invalid value '%v' for DataSourceType: valid values are %v", v, allowedDataSourceTypeEnumValues)
+		return nil, fmt.Errorf("invalid value '%v' for DataSourceType: valid values are %v", v, AllowedDataSourceTypeEnumValues)
 	}
 }
 
 // IsValid return true if the value is valid for the enum, false otherwise
 func (v DataSourceType) IsValid() bool {
-	for _, existing := range allowedDataSourceTypeEnumValues {
+	for _, existing := range AllowedDataSourceTypeEnumValues {
 		if existing == v {
 			return true
 		}

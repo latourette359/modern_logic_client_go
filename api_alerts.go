@@ -137,6 +137,11 @@ type ApiAlertGetRequest struct {
 	ApiService *AlertsApiService
 	pageSize *int32
 	pageNumber *int32
+	assignedTo *string
+	assignedToTeam *string
+	workflow *string
+	before *string
+	after *string
 }
 
 // Number of elements to return (default is 10)
@@ -147,6 +152,31 @@ func (r ApiAlertGetRequest) PageSize(pageSize int32) ApiAlertGetRequest {
 // Lists are ordered by creation date ascending. To return the first page, set pageNumber to zero
 func (r ApiAlertGetRequest) PageNumber(pageNumber int32) ApiAlertGetRequest {
 	r.pageNumber = &pageNumber
+	return r
+}
+// The username of the user the alert is assigned to
+func (r ApiAlertGetRequest) AssignedTo(assignedTo string) ApiAlertGetRequest {
+	r.assignedTo = &assignedTo
+	return r
+}
+// The name of the team the alert is assigned to
+func (r ApiAlertGetRequest) AssignedToTeam(assignedToTeam string) ApiAlertGetRequest {
+	r.assignedToTeam = &assignedToTeam
+	return r
+}
+// The name of the workflow associated to the alert
+func (r ApiAlertGetRequest) Workflow(workflow string) ApiAlertGetRequest {
+	r.workflow = &workflow
+	return r
+}
+// Filter alerts to those that occurred before the given date.
+func (r ApiAlertGetRequest) Before(before string) ApiAlertGetRequest {
+	r.before = &before
+	return r
+}
+// Filter alerts to those that occurred after the given date.
+func (r ApiAlertGetRequest) After(after string) ApiAlertGetRequest {
+	r.after = &after
 	return r
 }
 
@@ -195,6 +225,21 @@ func (a *AlertsApiService) AlertGetExecute(r ApiAlertGetRequest) (ListResponse, 
 	}
 	if r.pageNumber != nil {
 		localVarQueryParams.Add("pageNumber", parameterToString(*r.pageNumber, ""))
+	}
+	if r.assignedTo != nil {
+		localVarQueryParams.Add("assignedTo", parameterToString(*r.assignedTo, ""))
+	}
+	if r.assignedToTeam != nil {
+		localVarQueryParams.Add("assignedToTeam", parameterToString(*r.assignedToTeam, ""))
+	}
+	if r.workflow != nil {
+		localVarQueryParams.Add("workflow", parameterToString(*r.workflow, ""))
+	}
+	if r.before != nil {
+		localVarQueryParams.Add("before", parameterToString(*r.before, ""))
+	}
+	if r.after != nil {
+		localVarQueryParams.Add("after", parameterToString(*r.after, ""))
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}

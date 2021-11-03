@@ -7,6 +7,7 @@ Method | HTTP request | Description
 [**CustomerCustomerIdExecutionsGet**](ExecutionsApi.md#CustomerCustomerIdExecutionsGet) | **Get** /customer/{customerId}/executions | List Customer Executions
 [**ExecutionExecutionIdGet**](ExecutionsApi.md#ExecutionExecutionIdGet) | **Get** /execution/{executionId} | Get Execution Details
 [**ExecutionExecutionIdResumePost**](ExecutionsApi.md#ExecutionExecutionIdResumePost) | **Post** /execution/{executionId}/resume | Resume Execution
+[**ExecutionGet**](ExecutionsApi.md#ExecutionGet) | **Get** /execution | List executions
 
 
 
@@ -213,6 +214,79 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
 - **Content-Type**: application/json
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## ExecutionGet
+
+> ListResponse ExecutionGet(ctx).PageSize(pageSize).PageNumber(pageNumber).AlertType(alertType).Before(before).After(after).Execute()
+
+List executions
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    "time"
+    openapiclient "./openapi"
+)
+
+func main() {
+    pageSize := int32(56) // int32 | Number of elements to return (default is 10) (optional)
+    pageNumber := int32(56) // int32 | Lists are ordered by creation date ascending. To return the first page, set pageNumber to zero (optional)
+    alertType := "alertType_example" // string | The alert status of this execution (optional)
+    before := time.Now() // string | Filter executions to those that occurred before the given date. (optional)
+    after := time.Now() // string | Filter executions to those that occurred after the given date. (optional)
+
+    configuration := openapiclient.NewConfiguration()
+    api_client := openapiclient.NewAPIClient(configuration)
+    resp, r, err := api_client.ExecutionsApi.ExecutionGet(context.Background()).PageSize(pageSize).PageNumber(pageNumber).AlertType(alertType).Before(before).After(after).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `ExecutionsApi.ExecutionGet``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `ExecutionGet`: ListResponse
+    fmt.Fprintf(os.Stdout, "Response from `ExecutionsApi.ExecutionGet`: %v\n", resp)
+}
+```
+
+### Path Parameters
+
+
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiExecutionGetRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **pageSize** | **int32** | Number of elements to return (default is 10) | 
+ **pageNumber** | **int32** | Lists are ordered by creation date ascending. To return the first page, set pageNumber to zero | 
+ **alertType** | **string** | The alert status of this execution | 
+ **before** | **string** | Filter executions to those that occurred before the given date. | 
+ **after** | **string** | Filter executions to those that occurred after the given date. | 
+
+### Return type
+
+[**ListResponse**](ListResponse.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)

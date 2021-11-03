@@ -79,7 +79,7 @@ Name | Type | Description  | Notes
 
 ## AlertGet
 
-> ListResponse AlertGet(ctx).PageSize(pageSize).PageNumber(pageNumber).Execute()
+> ListResponse AlertGet(ctx).PageSize(pageSize).PageNumber(pageNumber).AssignedTo(assignedTo).AssignedToTeam(assignedToTeam).Workflow(workflow).Before(before).After(after).Execute()
 
 List Alerts
 
@@ -92,16 +92,22 @@ import (
     "context"
     "fmt"
     "os"
+    "time"
     openapiclient "./openapi"
 )
 
 func main() {
     pageSize := int32(56) // int32 | Number of elements to return (default is 10) (optional)
     pageNumber := int32(56) // int32 | Lists are ordered by creation date ascending. To return the first page, set pageNumber to zero (optional)
+    assignedTo := "assignedTo_example" // string | The username of the user the alert is assigned to (optional)
+    assignedToTeam := "assignedToTeam_example" // string | The name of the team the alert is assigned to (optional)
+    workflow := "workflow_example" // string | The name of the workflow associated to the alert (optional)
+    before := time.Now() // string | Filter alerts to those that occurred before the given date. (optional)
+    after := time.Now() // string | Filter alerts to those that occurred after the given date. (optional)
 
     configuration := openapiclient.NewConfiguration()
     api_client := openapiclient.NewAPIClient(configuration)
-    resp, r, err := api_client.AlertsApi.AlertGet(context.Background()).PageSize(pageSize).PageNumber(pageNumber).Execute()
+    resp, r, err := api_client.AlertsApi.AlertGet(context.Background()).PageSize(pageSize).PageNumber(pageNumber).AssignedTo(assignedTo).AssignedToTeam(assignedToTeam).Workflow(workflow).Before(before).After(after).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `AlertsApi.AlertGet``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -124,6 +130,11 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **pageSize** | **int32** | Number of elements to return (default is 10) | 
  **pageNumber** | **int32** | Lists are ordered by creation date ascending. To return the first page, set pageNumber to zero | 
+ **assignedTo** | **string** | The username of the user the alert is assigned to | 
+ **assignedToTeam** | **string** | The name of the team the alert is assigned to | 
+ **workflow** | **string** | The name of the workflow associated to the alert | 
+ **before** | **string** | Filter alerts to those that occurred before the given date. | 
+ **after** | **string** | Filter alerts to those that occurred after the given date. | 
 
 ### Return type
 
